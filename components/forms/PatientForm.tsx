@@ -2,12 +2,18 @@
 
 // Importaciones de librerías y componentes necesarios
 import { zodResolver } from "@hookform/resolvers/zod"; // Conecta zod con react-hook-form para la validación de esquemas
-import { useForm } from "react-hook-form"; // Hook principal para manejar formularios en React
 import { z } from "zod"; // Biblioteca para definir y validar esquemas de datos
-import { Button } from "@/components/ui/button"; // Componente de botón de una biblioteca de UI personalizada
+
 import { Form } from "@/components/ui/form"; // Componente de formulario de una biblioteca de UI personalizada
 import CustomFormField from "../CustomFormField"; // Componente personalizado para campos de formulario
 import SubmitButton from "./../SubmitButton";
+
+import { useForm } from "react-hook-form"; // Hook principal para manejar formularios en React
+import { useState } from "react";
+import { UserFormValidation } from "@/lib/validation";
+import { useRouter } from "next/navigation";
+
+import { createUser } from "@/lib/actions/patient.actions";
 
 // Definición de tipos de campos del formulario
 export enum FormFieldType {
@@ -20,28 +26,47 @@ export enum FormFieldType {
   SKELETON = "skeleton",
 }
 
-// Definición del esquema de validación del formulario usando zod
-const formSchema = z.object({
-  username: z.string().min(2, {
-    message: "Username must be at least 2 characters.",
-  }),
-});
-
+// --------------------------------------Componente
 // Definición del componente PatientForm
 const PatientForm = () => {
+  //Pasar el usuario por la ruta
+  const router = useRouter();
+
+  //Defiicion del hook de la variable isLoading
+  const [isLoading, setIsLoading] = useState(false);
+
   // 1. Define el formulario usando useForm y el esquema de zod
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema), // Usa zodResolver para la validación del esquema
+  const form = useForm<z.infer<typeof UserFormValidation>>({
+    resolver: zodResolver(UserFormValidation), // Usa zodResolver para la validación del esquema
     defaultValues: {
-      username: "", // Valores por defecto del formulario
+      name: "", // Valores por defecto del formulario
+      email: "", // Valores por defecto del formulario
+      phone: "", // Valores por defecto del formulario
     },
   });
 
   // 2. Define un manejador de envío del formulario
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // Haz algo con los valores del formulario
-    // ✅ Esto será seguro en cuanto a tipos y validado
-    console.log(values); // Muestra los valores en la consola
+  async function onSubmit({
+    name,
+    email,
+    phone,
+  }: z.infer<typeof UserFormValidation>) {
+    setIsLoading(true);
+    try {
+      //DATOS DE USUARIO
+      const userData = { name, email, phone };
+      //CREACION DEL USUARIO
+      console.log("userData:", { userData });
+      const user = await createUser(userData);
+      console.log("user:", user);
+
+      if (user) {
+        router.push(`/patient/${user.$id}/register`);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+    console.log({ name, email, phone }); // Muestra los valores en la consola
   }
 
   // Retorna la UI del formulario
@@ -86,11 +111,7 @@ const PatientForm = () => {
           placeholder="3001234567"
         />
 
-        {/* Se cambia por un boton personalizado */}
-        {/* <Button type="submit">Submit</Button> */}
-        {/* Botón de envío del formulario */}
-
-        <SubmitButton isLoading={isLoading} />
+        <SubmitButton isLoading={isLoading}>Get Started</SubmitButton>
       </form>
     </Form>
   );
